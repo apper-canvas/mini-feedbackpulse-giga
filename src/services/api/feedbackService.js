@@ -1,12 +1,12 @@
 import { delay } from '@/utils/helpers'
-
+import { sentimentService } from '@/services/sentimentService'
 class FeedbackService {
   constructor() {
     this.storageKey = 'feedbackpulse_feedback'
     this.initializeData()
   }
 
-  initializeData() {
+initializeData() {
     if (!localStorage.getItem(this.storageKey)) {
       const mockData = [
         {
@@ -16,7 +16,8 @@ class FeedbackService {
           timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
           email: "john.doe@email.com",
           pageUrl: "/product/dashboard",
-          userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+          userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+          sentiment: sentimentService.analyzeSentiment("Absolutely love this product! The user interface is intuitive and the features are exactly what I needed.")
         },
         {
           Id: 2,
@@ -25,7 +26,8 @@ class FeedbackService {
           timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
           email: "sarah.wilson@company.com",
           pageUrl: "/features",
-          userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"
+          userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
+          sentiment: sentimentService.analyzeSentiment("Great experience overall. The only issue I had was with the loading times, but everything else works perfectly.")
         },
         {
           Id: 3,
@@ -34,7 +36,8 @@ class FeedbackService {
           timestamp: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
           email: null,
           pageUrl: "/pricing",
-          userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 14_7_1 like Mac OS X) AppleWebKit/605.1.15"
+          userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 14_7_1 like Mac OS X) AppleWebKit/605.1.15",
+          sentiment: sentimentService.analyzeSentiment("It's okay, but I think there's room for improvement in the mobile experience.")
         },
         {
           Id: 4,
@@ -43,7 +46,8 @@ class FeedbackService {
           timestamp: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
           email: "mike.johnson@startup.io",
           pageUrl: "/contact",
-          userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+          userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+          sentiment: sentimentService.analyzeSentiment("Excellent customer service and the product exceeded my expectations. Highly recommended!")
         },
         {
           Id: 5,
@@ -52,7 +56,8 @@ class FeedbackService {
           timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
           email: "support@techcorp.com",
           pageUrl: "/docs/getting-started",
-          userAgent: "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"
+          userAgent: "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36",
+          sentiment: sentimentService.analyzeSentiment("Had some technical difficulties during setup. The documentation could be clearer.")
         },
         {
           Id: 6,
@@ -61,7 +66,8 @@ class FeedbackService {
           timestamp: new Date(Date.now() - 36 * 60 * 60 * 1000).toISOString(),
           email: "analytics.user@business.com",
           pageUrl: "/analytics",
-          userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+          userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+          sentiment: sentimentService.analyzeSentiment("Really impressed with the analytics dashboard. The insights are very helpful for my business.")
         }
       ]
       localStorage.setItem(this.storageKey, JSON.stringify(mockData))
@@ -84,7 +90,7 @@ class FeedbackService {
     return { ...item }
   }
 
-  async create(feedback) {
+async create(feedback) {
     await delay(250)
     const data = JSON.parse(localStorage.getItem(this.storageKey) || '[]')
     const maxId = data.length > 0 ? Math.max(...data.map(f => f.Id)) : 0
@@ -92,7 +98,8 @@ class FeedbackService {
     const newFeedback = {
       Id: maxId + 1,
       ...feedback,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      sentiment: feedback.comment ? sentimentService.analyzeSentiment(feedback.comment) : null
     }
     
     data.push(newFeedback)
@@ -100,7 +107,7 @@ class FeedbackService {
     return { ...newFeedback }
   }
 
-  async update(id, updates) {
+async update(id, updates) {
     await delay(250)
     const data = JSON.parse(localStorage.getItem(this.storageKey) || '[]')
     const index = data.findIndex(f => f.Id === id)
@@ -109,7 +116,16 @@ class FeedbackService {
       throw new Error('Feedback not found')
     }
     
-    data[index] = { ...data[index], ...updates }
+    const updatedFeedback = { ...data[index], ...updates }
+    
+    // Re-analyze sentiment if comment was updated
+    if (updates.comment !== undefined) {
+      updatedFeedback.sentiment = updates.comment 
+        ? sentimentService.analyzeSentiment(updates.comment) 
+        : null
+    }
+    
+    data[index] = updatedFeedback
     localStorage.setItem(this.storageKey, JSON.stringify(data))
     return { ...data[index] }
   }

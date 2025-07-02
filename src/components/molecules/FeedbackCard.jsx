@@ -5,10 +5,9 @@ import Card from '@/components/atoms/Card'
 import StarRating from '@/components/atoms/StarRating'
 import Button from '@/components/atoms/Button'
 import ApperIcon from '@/components/ApperIcon'
-
+import SentimentBadge from '@/components/molecules/SentimentBadge'
 const FeedbackCard = ({ feedback, onDelete, onReply }) => {
-  const { Id, rating, comment, timestamp, email, pageUrl } = feedback
-
+  const { Id, rating, comment, timestamp, email, pageUrl, sentiment } = feedback
   return (
     <Card className="p-6" hover={true}>
       <div className="flex items-start justify-between mb-4">
@@ -47,12 +46,20 @@ const FeedbackCard = ({ feedback, onDelete, onReply }) => {
         </div>
       </div>
 
-      {comment && (
+{comment && (
         <div className="mb-4">
-          <p className="text-gray-700 leading-relaxed">{comment}</p>
+          <div className="flex items-start justify-between gap-3">
+            <p className="text-gray-700 leading-relaxed flex-1">{comment}</p>
+            {sentiment && (
+              <SentimentBadge 
+                sentiment={sentiment.type} 
+                confidence={sentiment.confidence}
+                className="flex-shrink-0 mt-0.5"
+              />
+            )}
+          </div>
         </div>
       )}
-
       <div className="flex items-center justify-between text-sm text-gray-500">
         <div className="flex items-center space-x-4">
           <span className="flex items-center">
